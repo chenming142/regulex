@@ -73,7 +73,7 @@ define(function() {
 			if (c === LT) hi = pivot - 1;
 			else lo = pivot + 1;
 		} while (lo <= hi);
-		return -1;
+		return -1;11
 	}
 
 	/**
@@ -182,35 +182,48 @@ define(function() {
 	 * }
 	 */
 	function classify(ranges) {
+		//将单个字符，转换为双字符: "a" => "aa"
 		ranges = ranges.map(function(c) {
 			return (!c[1]) ? c + c : c;
 		});
+		
 		var i, j, k, l, r, n;
+		
+		//双字符数组和数组长度
 		ranges = sortUnique(ranges);
 		n = ranges.length;
+		
 		var singleMap = Object.create(null),
 			headMap = Object.create(null),
 			tailMap = Object.create(null),
 			head, tail;
+		//迭代所有ranges
 		for (i = 0; i < n; i++) {
-			r = ranges[i];
-			tail = r[1];
+			r = ranges[i];//StartEnd
 			headMap[r[0]] = true;
+			tail = r[1];
 			tailMap[tail] = true;
+			//迭代判断range的next的头是否大于prev的尾
 			for (j = i; j < n; j++) {
 				head = ranges[j][0];
 				if (head >= tail) {
+					//暂存next的头与prev的尾是相等的range
 					if (head === tail) singleMap[tail] = true;
 					break;
 				}
 			}
 		}
+		
+		//["09","a", "b","c"] = > ["0", "9", "a"， "a", "b","b", "c", "c"]
 		var chars = sortUnique(ranges.join('').split('')),
-			results = Object.keys(singleMap),
+			results = Object.keys(singleMap),//range中首尾相同
 			c = chars[0],
 			tmpMap = Object.create(null),
 			map = Object.create(null);
+		//ranges中的的{ranges[i]: []}
 		for (i = 0; i < n; i++) tmpMap[ranges[i]] = [];
+		
+		//ranges中与第一个相同的range
 		if (singleMap[c]) {
 			for (i = 0; i < n; i++) {
 				r = ranges[i];
@@ -218,19 +231,28 @@ define(function() {
 				else if (r[0] > c) break;
 			}
 		}
+		
+		//将ranges中的range首尾进行归纳和整合
 		for (i = 0, l = chars.length - 1; i < l; i++) {
 			head = chars[i];
 			tail = chars[i + 1];
+			//如果range中的头，又是尾，则头字符+1
 			if (tailMap[head]) head = succ(head);
+			//如果range中的尾，又是头，则尾字符-1
 			if (headMap[tail]) tail = pred(tail);
+			
+			//头必须小于等于尾
 			if (head <= tail) {
+				//ranges中的["a","a", "e","f"] => ["a", "ef"]
 				c = head === tail ? head : (head + tail);
+				//迭代整合
 				for (j = 0; j < n; j++) {
 					r = ranges[j];
 					if (r[0] > tail) break;
 					if (r[0] <= head && tail <= r[1]) tmpMap[r].push(c), results.push(c);
 				}
 			}
+			
 			head = chars[i];
 			tail = chars[i + 1]; //keep insert order,push single char later
 			if (singleMap[tail]) {
@@ -241,8 +263,10 @@ define(function() {
 				}
 			}
 		}
+		
 		results = sortUnique(results);
 		for (k in tmpMap) map[k[0] === k[1] ? k[0] : k] = tmpMap[k];
+		
 		return {
 			ranges: results,
 			map: map
@@ -418,14 +442,19 @@ define(function() {
 
 		}
 	}
+	/**
+	 * function to key
+	 *
+	 * @param {String} f
+	 * @return{Object} {functionName: functionName}
+	 */
 	function locals(f) {
 		var src = f.toString();
+		//TODO: 该正则有bug
 		var re = /^\s+function\s+([a-zA-Z]\w+)\s*\(/mg;
-		var fns = [],
-			match;
+		var fns = [], match;
 		while (match = re.exec(src)) fns.push(match[1]);
-		var methods = [],
-			f;
+		var methods = [], f;
 		while (f = fns.pop()) methods.push(f + ':' + f);
 		return '{\n' + methods.join(',\n') + '\n}';
 	}
